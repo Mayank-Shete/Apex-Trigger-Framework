@@ -1,4 +1,4 @@
-trigger AccountTrigger on Account (after insert,  before insert, before update,after update) {
+trigger ObjectTrigger on Object (after insert,  before insert, before update,after update) {
     // This is the only line of code that is required.
-    TriggerFactory.createTriggerDispatcher(Account.sObjectType);
+    TriggerFactory.createTriggerDispatcher(Object.sObjectType);
 }
