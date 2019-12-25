@@ -1,0 +1,104 @@
+
+public with sharing class TriggerFactory
+{
+  
+    public static void createTriggerDispatcher(Schema.sObjectType soType)
+    {   
+        System.debug('Start sobject createTriggerDispatcher '+soType);
+        //Check if trigger is after and is allowed to execute
+        if(CF_ALL_TriggerExecutionGate.isAllowed(getTriggerName(soType))){
+            ITriggerDispatcher dispatcher = getTriggerDispatcher(soType);
+            System.debug('Start createTriggerDispatcher TriggerDataFactory dispatcher '+dispatcher);
+            if (dispatcher == null)
+                throw new TriggerException('No Trigger dispatcher registered for Object Type: ' + soType);
+            execute(dispatcher);
+        }
+    }
+
+    /** 
+	* @author Hari Krishnan
+	* @date 07/17/2013
+	* @description Dispatches to the dispatcher's event handlers.
+	* @param ITriggerDispatcher A Trigger dispatcher that dispatches to the appropriate handlers
+	*/ 
+    private static void execute(ITriggerDispatcher dispatcher)
+    {
+    	TriggerParameters tp = new TriggerParameters(Trigger.old, Trigger.new, Trigger.oldMap, Trigger.newMap,
+									Trigger.isBefore, Trigger.isAfter, Trigger.isDelete, 
+									Trigger.isInsert, Trigger.isUpdate, Trigger.isUnDelete, Trigger.isExecuting);
+             // Handle before trigger events 
+                system.debug('inside execute t1'+Trigger.isBefore);
+                system.debug('inside execute t2'+Trigger.isInsert);
+			    system.debug('inside execute t3'+Trigger.isUpdate); 
+        if (Trigger.isBefore) {
+             system.debug('inside isbefore'+Trigger.isBefore);
+            dispatcher.bulkBefore();
+             system.debug('inside if isBefore '+Trigger.isBefore);
+                system.debug('inside if isInsert'+Trigger.isInsert);
+			    system.debug('inside if isUpdate'+Trigger.isUpdate); 
+            if (Trigger.isDelete)
+                dispatcher.beforeDelete(tp);
+            else if (Trigger.isInsert){
+                dispatcher.beforeInsert(tp);
+                system.debug('inside beforeInsert');
+            }
+            else if (Trigger.isUpdate){ 
+                system.debug('inside else if isUpdate '+Trigger.isUpdate); 
+                system.debug('tp '+tp); 
+                dispatcher.beforeUpdate(tp);    
+                system.debug('inside beforeUpdate');
+            } 
+        }
+        else	// Handle after trigger events
+        {
+            system.debug('inside afterUpdate');
+            dispatcher.bulkAfter();
+            if (Trigger.isDelete)
+                dispatcher.afterDelete(tp);
+            else if (Trigger.isInsert){
+                dispatcher.afterInsert(tp);
+                system.debug('inside afterInsert');
+            }
+            else if (Trigger.isUpdate){
+                dispatcher.afterUpdate(tp);
+                system.debug('inside afterUpdate');
+            }
+            else if (Trigger.isUnDelete)
+                dispatcher.afterUnDelete(tp);
+        }
+        dispatcher.andFinally();
+    } 
+
+
+    private static ITriggerDispatcher getTriggerDispatcher(Schema.sObjectType soType)
+    {
+    	String originalTypeName = soType.getDescribe().getName();
+    	String dispatcherTypeName = null;
+    	if (originalTypeName.toLowerCase().endsWith('__c')) {
+    		Integer index = originalTypeName.toLowerCase().indexOf('__c');
+            dispatcherTypeName = originalTypeName.substring(0, index) + 'TriggerDispatcher';
+            if(originalTypeName == 'Agency_Verification_Type__c'){
+                    dispatcherTypeName = 'AgencyVerificationType' + 'TriggerDispatcher';
+            }
+            
+    	}
+    	else
+    		dispatcherTypeName = originalTypeName + 'TriggerDispatcher';
+
+		Type obType = Type.forName(dispatcherTypeName);
+		ITriggerDispatcher dispatcher = (obType == null) ? null : (ITriggerDispatcher)obType.newInstance();
+    	return dispatcher;
+    }
+
+
+    private static String getTriggerName(Schema.sObjectType soType){
+        String originalTypeName = soType.getDescribe().getName();
+        if (originalTypeName.toLowerCase().endsWith('__c')) {
+            Integer index = originalTypeName.toLowerCase().indexOf('__c');
+            String name = originalTypeName.substring(0, index);
+            return (name.replaceAll('_','') + 'Trigger');
+        }else{
+            return (originalTypeName.replaceAll('_','') + 'Trigger');
+        }
+    }
+}
