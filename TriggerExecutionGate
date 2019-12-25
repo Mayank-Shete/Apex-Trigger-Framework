@@ -1,0 +1,77 @@
+public with sharing class TriggerExecutionGate {
+
+    /** Gate permission per trigger*/
+    private static Map<String, Boolean> gatePasses;
+    private static Boolean orgDefaults;
+    private static Boolean userInstance;
+    
+    /** Dataset name for gating All Triggers in one shot*/
+    private static final String ALLTRIGGERS = 'ALLTRIGGERS';
+    private static final String SELECTEDTRIGGERS = 'SELECTEDTRIGGERS';
+    private static final Boolean ALLTRIGGERS_PERMISSION = true;
+    
+    static{
+        gatePasses = new Map<String, Boolean>();
+        Map<String, Trigger_Execution_Gate__c> triggerGatePassSettings = Trigger_Execution_Gate__c.getAll();
+        for(String datasetName: triggerGatePassSettings.keySet()) {
+            Trigger_Execution_Gate__c triggerGatePassSetting = triggerGatePassSettings.get(datasetName);
+            gatePasses.put(triggerGatePassSetting.Name, triggerGatePassSetting.Allow_Execution__c);
+        }
+        //get org default and user Instance
+        Bypass_Rule__c brOrgDefault = Bypass_Rule__c.getOrgDefaults();
+        Bypass_Rule__c brUser = Bypass_Rule__c.getInstance();
+        orgDefaults = brOrgDefault.is_bypassed__c;
+        userInstance = brUser.is_bypassed__c;
+        //default Execute All triggers
+        if(!gatePasses.containsKey(ALLTRIGGERS)){
+            gatePasses.put(ALLTRIGGERS, ALLTRIGGERS_PERMISSION);
+            gatePasses.put(SELECTEDTRIGGERS, !ALLTRIGGERS_PERMISSION);
+        } else if(gatePasses.get(ALLTRIGGERS) && !gatePasses.containsKey(SELECTEDTRIGGERS)){
+            gatePasses.put(SELECTEDTRIGGERS, !ALLTRIGGERS_PERMISSION);
+        } else if(!gatePasses.get(ALLTRIGGERS) && !gatePasses.containsKey(SELECTEDTRIGGERS)){
+            gatePasses.put(SELECTEDTRIGGERS, ALLTRIGGERS_PERMISSION);
+        }
+    } 
+    
+    
+    /**
+     * if settings is configured with triggerName - return the corresponding permission
+     * if settings are not configured for the trigger - return the corresponding ALLTRIGGERS permission
+     * @param  triggerName  Name of the trigger we are checking
+     * @return              the execution permission flag
+     */
+    public static Boolean isAllowed(String triggerName) {
+        System.debug('1.Number of Queries used in this apex code so farBennet: ' + Limits.getQueries());
+        System.debug('2.Number of rows queried in this apex code so farBennet: ' + Limits.getDmlRows());
+       // return gatePasses.get(ALLTRIGGERS);
+        if(!isBypassed()){
+            if(gatePasses.get(ALLTRIGGERS)) {
+                if(gatePasses.containsKey(triggerName)) {
+                   
+                    return gatePasses.get(triggerName);
+                }
+                return gatePasses.get(ALLTRIGGERS);
+            }else if(gatePasses.get(SELECTEDTRIGGERS)) {
+                if(gatePasses.containsKey(triggerName)) {
+                
+                    return gatePasses.get(triggerName);
+                } 
+                return false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * if Bypass rule setting of org default or user instance is true - return true
+     * if not - return false
+     * 
+     * @return              the bypass rule flag
+     */
+    public static Boolean isBypassed() {
+        if(orgDefaults || userInstance){
+            return true;
+        }
+        return false;
+    }
+}
