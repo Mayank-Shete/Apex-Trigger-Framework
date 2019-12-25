@@ -1,0 +1,8 @@
+public class ObjectBeforeInsertTriggerHandler extends TriggerHandlerBase {
+	public override void mainEntry(TriggerParameters tp) {
+		
+		List<Object> accountList = (List<Object>)tp.newList;
+	  //your logic
+    
+	}
+}
