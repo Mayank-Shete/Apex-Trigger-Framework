@@ -6,7 +6,7 @@ public with sharing class TriggerFactory
     {   
         System.debug('Start sobject createTriggerDispatcher '+soType);
         //Check if trigger is after and is allowed to execute
-        if(CF_ALL_TriggerExecutionGate.isAllowed(getTriggerName(soType))){
+        if(TriggerExecutionGate.isAllowed(getTriggerName(soType))){
             ITriggerDispatcher dispatcher = getTriggerDispatcher(soType);
             System.debug('Start createTriggerDispatcher TriggerDataFactory dispatcher '+dispatcher);
             if (dispatcher == null)
@@ -15,12 +15,6 @@ public with sharing class TriggerFactory
         }
     }
 
-    /** 
-	* @author Hari Krishnan
-	* @date 07/17/2013
-	* @description Dispatches to the dispatcher's event handlers.
-	* @param ITriggerDispatcher A Trigger dispatcher that dispatches to the appropriate handlers
-	*/ 
     private static void execute(ITriggerDispatcher dispatcher)
     {
     	TriggerParameters tp = new TriggerParameters(Trigger.old, Trigger.new, Trigger.oldMap, Trigger.newMap,
