@@ -4,11 +4,9 @@ public with sharing class TriggerFactory
   
     public static void createTriggerDispatcher(Schema.sObjectType soType)
     {   
-        System.debug('Start sobject createTriggerDispatcher '+soType);
         //Check if trigger is after and is allowed to execute
         if(TriggerExecutionGate.isAllowed(getTriggerName(soType))){
             ITriggerDispatcher dispatcher = getTriggerDispatcher(soType);
-            System.debug('Start createTriggerDispatcher TriggerDataFactory dispatcher '+dispatcher);
             if (dispatcher == null)
                 throw new TriggerException('No Trigger dispatcher registered for Object Type: ' + soType);
             execute(dispatcher);
@@ -71,11 +69,7 @@ public with sharing class TriggerFactory
     	if (originalTypeName.toLowerCase().endsWith('__c')) {
     		Integer index = originalTypeName.toLowerCase().indexOf('__c');
             dispatcherTypeName = originalTypeName.substring(0, index) + 'TriggerDispatcher';
-            if(originalTypeName == 'Agency_Verification_Type__c'){
-                    dispatcherTypeName = 'AgencyVerificationType' + 'TriggerDispatcher';
-            }
-            
-    	}
+        }
     	else
     		dispatcherTypeName = originalTypeName + 'TriggerDispatcher';
 
